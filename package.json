@@ -1,0 +1,28 @@
+{
+  "name": "data-job-executor",
+  "version": "0.0.1",
+  "description": "Move dados de um recurso para outro de tempos em tempos fazendo as conversões necessárias.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.felipe-hotmail:FelipeASoares314/data-job-executor.git"
+  },
+  "keywords": [
+    "nodejs"
+  ],
+  "author": "Felipe A. Soares",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^7.0.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "nodemon": "^2.0.3"
+  }
+}
