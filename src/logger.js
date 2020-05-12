@@ -11,7 +11,7 @@ const customFormat = printf(({ level, message, label, timestamp }) => {
  */
 
 module.exports = module => createLogger({
-  level: 'info',
+  level: process.env.logLevel || 'debug',
   format: combine(
     label({ label: module }),
     timestamp(),
