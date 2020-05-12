@@ -13,7 +13,7 @@ function start () {
   const job = JobFactory.get(jobType)
 
   const schedulerType = process.env.SCHEDULER || 'cron'
-  const schedulerInterval = process.env.SCHEDULER || '* * * * *' // A cada minuto
+  const schedulerInterval = process.env.SCHEDULER_INTERVAL || '* * * * *' // A cada minuto
 
   log.info('Scheduler do tipo %s para o intervalo %s sendo criado...', schedulerType, schedulerInterval)
   const Scheduler = SchedulerFactory.get(schedulerType)
