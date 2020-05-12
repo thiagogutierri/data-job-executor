@@ -11,7 +11,7 @@ const customFormat = printf(({ level, message, label, timestamp }) => {
  */
 
 module.exports = module => createLogger({
-  level: process.env.logLevel || 'debug',
+  level: process.env.LOG_LEVEL || 'debug',
   format: combine(
     label({ label: module }),
     timestamp(),
@@ -25,12 +25,12 @@ module.exports = module => createLogger({
     new transports.Console(),
 
     new transports.File({
-      filename: 'logs/error.log',
+      filename: process.env.LOG_ERROR_PATH || 'logs/error.log',
       level: 'error'
     }),
 
     new transports.File({
-      filename: 'logs/combined.log'
+      filename: process.env.LOG_PATH || 'logs/app.log'
     })
   ]
 })
