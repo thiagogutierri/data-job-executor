@@ -4,6 +4,7 @@ const FileConfigSource = require('../jobs/config/FileConfigSource')
 const { capitalizeFirst } = require('../utils')
 
 const JOB_ROOT_PATH = process.env.JOB_ROOT_PATH || '../jobs'
+const JOB_CONFIG_PATH = process.env.JOB_CONFIG_PATH || `${__dirname}/../../configuration/index.json`
 
 class JobFactory extends BaseFac {
   /**
@@ -15,7 +16,7 @@ class JobFactory extends BaseFac {
     const Job = super.get(`${JOB_ROOT_PATH}/${capitalizeFirst(type)}`)
 
     // TODO: Permitir parametrização
-    return new Job(new FileConfigSource(`${__dirname}/../../configuration/index.json`))
+    return new Job(new FileConfigSource(JOB_CONFIG_PATH))
   }
 }
 

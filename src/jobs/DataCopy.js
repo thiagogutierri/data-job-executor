@@ -2,8 +2,8 @@ const log = require('../logger')(__filename)
 const Job = require('./Job')
 
 class DataCopy extends Job {
-  constructor (config) {
-    super(config)
+  constructor (config, parser) {
+    super(config, parser)
 
     if (!config.configuration.job) throw new Error('Configuração inválida, esperava a chave "job"')
     if (!config.configuration.job.from) throw new Error('Configuração inválida, fonte de dados não especificada')
