@@ -14,8 +14,6 @@ class JobFactory extends BaseFac {
 
   static get (type) {
     const Job = super.get(`${JOB_ROOT_PATH}/${capitalizeFirst(type)}`)
-
-    // TODO: Permitir parametrização
     return new Job(new FileConfigSource(JOB_CONFIG_PATH))
   }
 }

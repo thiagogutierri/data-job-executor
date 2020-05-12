@@ -1,6 +1,13 @@
 {
   "job": {
-    "from": "DynamoDb",
-    "to": "Hdfs"
+    "from": "Dynamodb",
+    "to": "Hdfs",
+    "buckets": [{
+      "name": "PaxLabDynamoHive",
+      "itemsPerJson": 10
+    }]
+  },
+  "aws": {
+    "region": "us-east-1"
   }
 }

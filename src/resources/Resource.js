@@ -1,0 +1,29 @@
+const logger = require('../logger')(__filename)
+
+/**
+ * Essa classe é só um modelo (abstract), usar as filhas!
+ */
+
+class Resource {
+  constructor (config, parser) {
+    this.config = config
+    this.parser = parser
+  }
+
+  getFullData () {
+    logger.error('Classe que deveria ser usada como modelo sendo instanciada!')
+    throw new Error('Classe modelo não deve ser usada!')
+  }
+
+  getPartialData () {
+    logger.error('Classe que deveria ser usada como modelo sendo instanciada!')
+    throw new Error('Classe modelo não deve ser usada!')
+  }
+
+  insertData (data) {
+    logger.error('Classe que deveria ser usada como modelo sendo instanciada!')
+    throw new Error('Classe modelo não deve ser usada!')
+  }
+}
+
+module.exports = Resource

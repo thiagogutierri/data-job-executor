@@ -17,14 +17,18 @@ class Aws extends Formatter {
   }
 
   static N (data, path, obj) {
+    log.debug('Parseando number: %s, %O, %O', path, data, obj)
     data[path] = Number(obj.N)
   }
 
   static S (data, path, obj) {
+    log.debug('Parseando string: %s, %O, %O', path, data, obj)
     data[path] = String(obj.S)
   }
 
   static M (data, path, obj) {
+    log.debug('Parseando map: %s, %O, %O', path, data, obj)
+
     Object.keys(obj.M).forEach(key =>
       Object.keys(obj.M[key]).forEach(f => {
         if (!(typeof this[f] === 'function')) {

@@ -14,17 +14,17 @@ class ResourceFactory extends BaseFac {
    */
 
   static get (type) {
-    const Job = super.get(`${RESOURCE_ROOT_PATH}/${capitalizeFirst(type)}`)
+    const Resource = super.get(`${RESOURCE_ROOT_PATH}/${capitalizeFirst(type)}`)
 
-    const dataFormatter = process.env.DATA_FORMATTER
+    const dataFormatter = process.env.DATA_FORMATTER || 'formatter'
     const Formatter = super.get(`${FORMATTER_ROOT_PATH}/${capitalizeFirst(dataFormatter)}`)
 
-    return new Job(new FileConfigSource(RESOURCE_CONFIG_PATH), Formatter)
+    return new Resource(new FileConfigSource(RESOURCE_CONFIG_PATH), Formatter)
   }
 
   static getWithFormatter (type, formatter) {
-    const Job = super.get(`${RESOURCE_ROOT_PATH}/${capitalizeFirst(type)}`)
-    return new Job(new FileConfigSource(RESOURCE_CONFIG_PATH), formatter)
+    const Resource = super.get(`${RESOURCE_ROOT_PATH}/${capitalizeFirst(type)}`)
+    return new Resource(new FileConfigSource(RESOURCE_CONFIG_PATH), formatter)
   }
 }
 
