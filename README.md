@@ -52,4 +52,4 @@ O arquivo de configuração padrão para que a aplicação funcione está locali
 
 ## Arquitetura
 
-Um diagrama de classe foi anexado na raiz do projeto contendo a arquitetura da aplicação.
+![Image description](./data-job-executor.png)
