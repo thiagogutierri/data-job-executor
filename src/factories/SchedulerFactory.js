@@ -2,7 +2,7 @@ const BaseFac = require('./BaseFac')
 
 const { capitalizeFirst } = require('../utils')
 
-const SCHEDULER_ROOT_PATH = process.env.SCHEDULER_ROOT_PATH || '../scheduler'
+const SCHEDULER_ROOT_PATH = process.env.SCHEDULER_ROOT_PATH || '../schedulers'
 
 class SchedulerFactory extends BaseFac {
   /**

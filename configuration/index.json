@@ -1,0 +1,6 @@
+{
+  "job": {
+    "from": "DynamoDb",
+    "to": "Hdfs"
+  }
+}
