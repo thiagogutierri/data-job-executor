@@ -27,9 +27,6 @@ class Aws extends Formatter {
   static M (data, path, obj) {
     Object.keys(obj.M).forEach(key =>
       Object.keys(obj.M[key]).forEach(f => {
-        log.debug('-------------------')
-        log.debug('key %O f %O obj.M[key] %O', key, f, obj.M[key])
-
         if (!(typeof this[f] === 'function')) {
           throw new Error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
         }
