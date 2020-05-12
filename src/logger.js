@@ -1,5 +1,5 @@
 const { createLogger, format, transports } = require('winston')
-const { combine, timestamp, label, printf } = format
+const { combine, timestamp, label, printf, splat } = format
 
 const customFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`
@@ -15,6 +15,7 @@ module.exports = module => createLogger({
   format: combine(
     label({ label: module }),
     timestamp(),
+    splat(),
     customFormat
   ),
   defaultMeta: {
