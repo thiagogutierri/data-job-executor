@@ -1,2 +1,3 @@
-console.log('Olá')
-process.exit(0)
+const logger = require('./logger')(__filename)
+
+logger.info('Olá')
