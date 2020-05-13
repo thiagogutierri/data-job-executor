@@ -141,8 +141,9 @@ class DataCopy extends Job {
     }
 
     return lastResults
-      .sort((x, y) => x.executionTime > y.executionTime)
-      .find(res => res.bucket.name === bucket)
+      .filter(x => x) // filtrando null
+      .sort((x, y) => y.executionTime - x.executionTime)
+      .find(last => last.bucket.name === bucket)
   }
 
   naming (config) {

@@ -70,8 +70,7 @@ class Dynamodb extends Resource {
     const shardPromises = streamDescribe.map(async stream => {
       log.silly('Informações da stream %O', stream.StreamLabel)
       log.debug('Status da stream %s: %s', stream.StreamLabel, stream.StreamStatus)
-
-      log.debug('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
+      log.silly('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
 
       // pega o último shard id processado para essa stream
       let lastShardId
