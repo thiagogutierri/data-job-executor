@@ -20,21 +20,25 @@ class Hdfs extends Resource {
     throw new Error('Método não implementado')
   }
 
-  insertData ({ data, outName, bucket }) {
-    return true
+  async insertData ({ data, outName, bucket }) {
+    // formata em uma lista no formato de um json por linha
+    // delimitado por quebra de linha
+    const hiveList = data.map(item => JSON.stringify(item))
+      .reduce((acc, atual) => acc.concat(atual).concat('\n'), '')
 
-    // const path = `${this.config.hdfs.writePath}/${bucket.name}/${outName}`
+    // full path
+    const path = `${this.config.hdfs.writePath}/${bucket.name}/${outName}`
 
-    // log.debug('Salvando arquivo no path %s', path)
-    // log.silly('Objeto sendo gravado %O', data)
+    log.debug('Salvando arquivo no path %s', path)
+    log.silly('Objeto sendo gravado %O', data)
 
-    // const remoteFileStream = this.client.createWriteStream(path)
-    // Readable.from(JSON.stringify(data)).pipe(remoteFileStream)
+    const remoteFileStream = this.client.createWriteStream(path)
+    Readable.from(hiveList).pipe(remoteFileStream)
 
-    // return new Promise((resolve, reject) => {
-    //   remoteFileStream.on('error', reject)
-    //   remoteFileStream.on('finish', resolve)
-    // })
+    return new Promise((resolve, reject) => {
+      remoteFileStream.on('error', reject)
+      remoteFileStream.on('finish', resolve)
+    })
   }
 }
 

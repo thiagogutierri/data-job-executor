@@ -67,17 +67,17 @@ class DataCopy extends Job {
         while ((itens = result.itens.slice(start, end + start)).length) {
           log.debug('Itens a serem salvos %O', itens)
 
-          const promises = itens.map(item => outResource.insertData({
-            data: item,
+          // grava o lote
+          await outResource.insertData({
+            data: itens,
             outName: this.naming({
               bucketName: bucket.name,
               naming: result.naming
             }),
             bucket,
             lastResult: bucketLastResult
-          }))
+          })
 
-          await Promise.all(promises)
           start += end
         }
 

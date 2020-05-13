@@ -48,9 +48,33 @@ class Dynamodb extends Resource {
    * Pega ultimas alterações de uma tabela baseado em uma table stream
    */
 
-  getPartialData () {
-    log.error('Classe que deveria ser usada como modelo sendo instanciada!')
-    throw new Error('Classe modelo não deve ser usada!')
+  async getPartialData ({ bucket, lastResult }) {
+    log.debug('Last bucket result %O', lastResult)
+    log.info('Processando streams para o bucket %s', bucket)
+
+    const dynamodbstreams = new AWS.DynamoDBStreams()
+    const tableStreams = await dynamodbstreams.listStreams({ TableName: bucket }).promise()
+
+    if (!tableStreams.Streams.length) throw new Error('Bucket %s não tem streams associado a ele!', bucket)
+
+    // uma tabela pode ter mais de uma stream associada a ela
+    const pStreamDescribe = tableStreams.Streams.map(async stream => {
+      log.debug('Pegando informações sobre a stream %s', stream.StreamLabel)
+      const describe = await dynamodbstreams.describeStream({ StreamArn: stream.StreamArn }).promise()
+      log.debug('Describe result', describe)
+      return describe
+    })
+
+    const streamDescribe = await Promise.all(pStreamDescribe)
+    streamDescribe.map(stream => {
+      log.silly('Informações da stream %O', stream.StreamLabel)
+      log.debug('Status da stream %s: %s', stream.StreamLabel, stream.StreamStatus)
+
+      log.debug('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
+      // pega os shards
+    })
+
+    throw new Error('Não implementado')
   }
 
   insertData (data) {

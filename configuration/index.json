@@ -15,7 +15,7 @@
     "region": "us-east-1"
   },
   "hdfs": {
-    "user": "webuser",
+    "user": "hive",
     "host": "localhost",
     "port": 50070,
     "path": "/webhdfs/v1",
