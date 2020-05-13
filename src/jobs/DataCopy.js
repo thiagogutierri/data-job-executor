@@ -58,34 +58,43 @@ class DataCopy extends Job {
 
         log.silly('Itens recebidos %O', result)
 
-        let start = 0
-        const end = bucketLastResult
-          ? result.itens.length
-          : bucket.itemsPerJson
-
-        let itens
-        while ((itens = result.itens.slice(start, end + start)).length) {
-          log.debug('Itens a serem salvos %O', itens)
-
-          // grava o lote
-          await outResource.insertData({
-            data: itens,
-            outName: this.naming({
-              bucketName: bucket.name,
-              naming: result.naming
-            }),
-            bucket,
-            lastResult: bucketLastResult
-          })
-
-          start += end
-        }
-
-        return {
+        const retorno = {
           bucket,
           total: result.total,
           executionTime: Date.now()
         }
+
+        const itensPromise = result.map(async i => {
+          let start = 0
+          const end = bucketLastResult
+            ? i.itens.length
+            : bucket.itemsPerJson
+
+          let itens
+          while ((itens = i.itens.slice(start, end + start)).length) {
+            log.debug('Itens a serem salvos %O', itens)
+
+            // grava o lote
+            await outResource.insertData({
+              data: itens,
+              outName: this.naming({
+                bucketName: bucket.name,
+                naming: i.naming
+              }),
+              bucket,
+              lastResult: bucketLastResult
+            })
+
+            start += end
+          }
+
+          delete i.itens
+          retorno[i.label] = { ...i }
+        })
+
+        await Promise.all(itensPromise)
+
+        return retorno
       })
 
       if (!Array.isArray(lastResults)) lastResults = []
@@ -94,7 +103,7 @@ class DataCopy extends Job {
           lastResults = lastResults.concat(results)
         })
         // faz catch para poder salvar o resultado dos que executaram
-        .catch(err => log.error(err))
+        .catch(err => log.error(err.stack))
 
       // escrevendo resultados
       await resultsSource.write(lastResults)

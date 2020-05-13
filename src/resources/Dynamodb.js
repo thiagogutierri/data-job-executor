@@ -38,7 +38,9 @@ class Dynamodb extends Resource {
       const itens = data.Items.map(item => this.parser.formatOut(item))
 
       resolve({
-        itens,
+        itens: [{
+          records: itens
+        }],
         total: data.Count
       })
     }))
@@ -61,20 +63,67 @@ class Dynamodb extends Resource {
     const pStreamDescribe = tableStreams.Streams.map(async stream => {
       log.debug('Pegando informações sobre a stream %s', stream.StreamLabel)
       const describe = await dynamodbstreams.describeStream({ StreamArn: stream.StreamArn }).promise()
-      log.debug('Describe result', describe)
-      return describe
+      return describe.StreamDescription
     })
 
     const streamDescribe = await Promise.all(pStreamDescribe)
-    streamDescribe.map(stream => {
+    const shardPromises = streamDescribe.map(async stream => {
       log.silly('Informações da stream %O', stream.StreamLabel)
       log.debug('Status da stream %s: %s', stream.StreamLabel, stream.StreamStatus)
 
       log.debug('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
+
+      // pega o último shard id processado para essa stream
+      let lastShardId
+      if (lastResult[stream.StreamLabel]) {
+        lastShardId = lastResult[stream.StreamLabel].shard.ShardId
+      }
+
       // pega os shards
+      const lastIndex = stream.Shards.findIndex(shard => shard.ShardId === lastShardId)
+      const index = lastIndex === stream.Shards.length - 1
+        // se o último processado é o último shard da stream, continua nele
+        ? lastIndex
+        // se não pega o próximo
+        : lastIndex + 1
+
+      const currentShard = stream.Shards[index]
+
+      // shard iterator
+      const shardIterator = await dynamodbstreams.getShardIterator({
+        ShardId: currentShard.ShardId,
+        ShardIteratorType: 'TRIM_HORIZON',
+        StreamArn: stream.StreamArn
+      }).promise()
+
+      log.debug('Shard %s iterator %O', currentShard.ShardId, shardIterator.ShardIterator)
+      const records = await dynamodbstreams.getRecords({ ShardIterator: shardIterator.ShardIterator }).promise()
+      return {
+        stream,
+        currentShard,
+        records: records.Records
+      }
     })
 
-    throw new Error('Não implementado')
+    const shards = await Promise.all(shardPromises)
+
+    return shards.map(shard => {
+      shard.records = shard.records.map(item => this.parser.formatOut(item))
+      return shard
+    }).reduce((acc, atual) => {
+      acc.push({
+        label: atual.stream.StreamLabel,
+        itens: atual.records,
+        naming: atual.currentShard.ShardId,
+        shard: atual.currentShard,
+        total: atual.records.length
+      })
+
+      return acc
+    }, [{
+      itens: [],
+      total: 0
+    }])
   }
 
   insertData (data) {
