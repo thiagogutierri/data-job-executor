@@ -6,8 +6,8 @@ class Dynamodb extends Resource {
   constructor (config, parser) {
     super(config, parser)
 
-    log.debug('Atualizando as configurações da AWS: %O', this.config.configuration.aws)
-    AWS.config.update(this.config.configuration.aws)
+    log.debug('Atualizando as configurações da AWS: %O', this.config.aws)
+    AWS.config.update(this.config.aws)
   }
 
   /**
@@ -35,7 +35,12 @@ class Dynamodb extends Resource {
       log.debug('Total de itens scaneados %s', data.ScannedCount)
 
       // não usar a forma contrata do map se não o parser perde a referencia do this
-      resolve(data.Items.map(item => this.parser.formatOut(item)))
+      const itens = data.Items.map(item => this.parser.formatOut(item))
+
+      resolve({
+        itens,
+        total: data.Count
+      })
     }))
   }
 

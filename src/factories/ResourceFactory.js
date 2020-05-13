@@ -19,7 +19,7 @@ class ResourceFactory extends BaseFac {
     const dataFormatter = process.env.DATA_FORMATTER || 'formatter'
     const Formatter = super.get(`${FORMATTER_ROOT_PATH}/${capitalizeFirst(dataFormatter)}`)
 
-    return new Resource(new FileConfigSource(RESOURCE_CONFIG_PATH), Formatter)
+    return new Resource(new FileConfigSource(RESOURCE_CONFIG_PATH).configuration, Formatter)
   }
 
   static getWithFormatter (type, formatter) {

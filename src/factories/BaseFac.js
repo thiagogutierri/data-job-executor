@@ -6,8 +6,7 @@ class BaseFac {
 
     try {
       const module = require(path)
-      log.debug('Módulo %s carregado!', path)
-      log.debug('Modulo %O', module)
+      log.debug('Módulo %s carregado! - %O', path, module)
 
       return module
     } catch (err) {

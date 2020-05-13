@@ -5,8 +5,8 @@ const logger = require('../logger')(__filename)
  */
 
 class Job {
-  constructor (config) {
-    this.config = config
+  constructor (configSource) {
+    this.configSource = configSource
   }
 
   execute () {

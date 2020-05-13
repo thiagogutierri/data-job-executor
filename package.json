@@ -4,7 +4,7 @@
   "description": "Move dados de um recurso para outro de tempos em tempos fazendo as conversões necessárias.",
   "main": "src/index.js",
   "scripts": {
-    "dev": "DATA_FORMATTER=aws nodemon src/index.js",
+    "dev": "DATA_FORMATTER=aws nodemon --ignore logs/ --ignore tests/ src/index.js",
     "test": "mocha",
     "start": "NODE_ENV=production node src/index.js"
   },
@@ -30,6 +30,7 @@
   "dependencies": {
     "aws-sdk": "^2.675.0",
     "cron": "^1.8.2",
+    "webhdfs": "^1.2.0",
     "winston": "^3.2.1"
   }
 }
