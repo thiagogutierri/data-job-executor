@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "DATA_FORMATTER=aws LOG_LEVEL=silly nodemon --ignore logs/ --ignore tests/ src/index.js",
-    "test": "mocha",
+    "test": "LOG_LEVEL=silly mocha",
     "start": "NODE_ENV=production node src/index.js"
   },
   "repository": {

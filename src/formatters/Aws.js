@@ -16,19 +16,23 @@ class Aws extends Formatter {
     return retorno
   }
 
+  static getData (data, path) {
+    return typeof data[path] === 'undefined' ? data : data[path]
+  }
+
   static N (data, path, obj) {
     log.silly('Parseando number: %s, %O, %O', path, data, obj)
-    data[path] = Number(obj.N)
+    data[path] = Number(this.getData(obj, 'N'))
   }
 
   static S (data, path, obj) {
     log.silly('Parseando string: %s, %O, %O', path, data, obj)
-    data[path] = String(obj.S)
+    data[path] = String(this.getData(obj, 'S'))
   }
 
   static B (data, path, obj) {
     log.silly('Parseando binario: %s, %O, %O', path, data, obj)
-    data[path] = Buffer.from(obj.B, 'binary').toString('base64')
+    data[path] = Buffer.from(this.getData(obj, 'B'), 'binary').toString('base64')
   }
 
   static SS (data, path, obj) {
