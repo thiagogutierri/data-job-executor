@@ -37,12 +37,10 @@ class Dynamodb extends Resource {
       // não usar a forma contrata do map se não o parser perde a referencia do this
       const itens = data.Items.map(item => this.parser.formatOut(item))
 
-      resolve({
-        itens: [{
-          records: itens
-        }],
+      resolve([{
+        itens,
         total: data.Count
-      })
+      }])
     }))
   }
 
@@ -67,47 +65,59 @@ class Dynamodb extends Resource {
     })
 
     const streamDescribe = await Promise.all(pStreamDescribe)
-    const shardPromises = streamDescribe.map(async stream => {
+    const shardPromises = streamDescribe.map(stream => {
       log.silly('Informações da stream %O', stream.StreamLabel)
       log.debug('Status da stream %s: %s', stream.StreamLabel, stream.StreamStatus)
       log.silly('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
 
-      // pega o último shard id processado para essa stream
-      let lastShardId
-      if (lastResult[stream.StreamLabel]) {
-        lastShardId = lastResult[stream.StreamLabel].shard.ShardId
-      }
+      // pega o próximo shard a ser processado
+      const nextShard = lastResult[stream.StreamLabel]
+        ? stream.Shards.find(
+          shard => shard.ShardId === lastResult[stream.StreamLabel].shard.nextId
+        )
+        : stream.Shards[0]
 
-      // pega os shards
-      const lastIndex = stream.Shards.findIndex(shard => shard.ShardId === lastShardId)
-      const index = lastIndex === stream.Shards.length - 1
-        // se o último processado é o último shard da stream, continua nele
-        ? lastIndex
-        // se não pega o próximo
-        : lastIndex + 1
-
-      const currentShard = stream.Shards[index]
-
-      // shard iterator
-      const shardIterator = await dynamodbstreams.getShardIterator({
-        ShardId: currentShard.ShardId,
-        ShardIteratorType: 'TRIM_HORIZON',
-        StreamArn: stream.StreamArn
-      }).promise()
-
-      log.debug('Shard %s iterator %O', currentShard.ShardId, shardIterator.ShardIterator)
-      const records = await dynamodbstreams.getRecords({ ShardIterator: shardIterator.ShardIterator }).promise()
       return {
         stream,
-        currentShard,
-        records: records.Records
+        nextShard
+      }
+    }).map(async data => {
+      let iteratorResult
+      let records = []
+
+      const options = { shardId: data.nextShard.ShardId, streamArn: data.stream.StreamArn }
+      while ((iteratorResult = await this.getIterator(dynamodbstreams, options)).records.NextShardIterator) {
+        log.silly('Iterator records %O', iteratorResult.records)
+        records = records.concat(iteratorResult.records.Records)
+        options.shardIterator = iteratorResult.records.NextShardIterator
+      }
+
+      log.debug('Quantidade de registros no shard: %s', records.length)
+
+      const index = data.stream.Shards.findIndex(shard => shard.ShardId === data.nextShard.ShardId)
+
+      return {
+        stream: data.stream,
+        currentShard: {
+          ...data.nextShard,
+          nextId: index === data.stream.Shards.length - 1
+            ? data.nextShard.ShardId
+            : data.stream.Shards[index + 1].ShardId
+        },
+        records
       }
     })
 
     const shards = await Promise.all(shardPromises)
 
     return shards.map(shard => {
-      shard.records = shard.records.map(item => this.parser.formatOut(item))
+      shard.records = shard.records
+        .map(item => {
+          const parsed = this.parser.formatOut(item.dynamodb.NewImage)
+          parsed.eventName = item.eventName
+          return parsed
+        })
+
       return shard
     }).reduce((acc, atual) => {
       acc.push({
@@ -119,10 +129,30 @@ class Dynamodb extends Resource {
       })
 
       return acc
-    }, [{
-      itens: [],
-      total: 0
-    }])
+    }, [])
+  }
+
+  async getIterator (dynamodbstreams, { shardId, streamArn, shardIterator }) {
+    // shard iterator
+    if (!shardIterator) {
+      const shardIt = await dynamodbstreams.getShardIterator({
+        ShardId: shardId,
+        ShardIteratorType: 'TRIM_HORIZON',
+        StreamArn: streamArn
+      }).promise()
+
+      shardIterator = shardIt.ShardIterator
+    }
+
+    const records = await dynamodbstreams.getRecords({
+      ShardIterator: shardIterator,
+      Limit: 1000
+    }).promise()
+
+    return {
+      records,
+      shardIterator
+    }
   }
 
   insertData (data) {
