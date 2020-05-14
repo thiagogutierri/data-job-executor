@@ -100,7 +100,8 @@ class DataCopy extends Job {
       if (!Array.isArray(lastResults)) lastResults = []
       await Promise.all(promises)
         .then(results => {
-          lastResults = lastResults.concat(results)
+          log.debug('results %O', results)
+          results.map(result => this.updateBucketResults(lastResults, result.bucket.name, result))
         })
         // faz catch para poder salvar o resultado dos que executaram
         .catch(err => log.error(err.stack))
@@ -131,6 +132,21 @@ class DataCopy extends Job {
     return new ResultsSource(this.configSource.configuration.job.resultSource)
   }
 
+  updateBucketResults (lastResults, bucket, results) {
+    const index = lastResults
+      .filter(x => x) // filtrando null
+      .findIndex(last => last.bucket.name === bucket)
+
+    if (index === -1) {
+      lastResults.push(results)
+    } else {
+      lastResults[index] = {
+        ...lastResults[index],
+        ...results
+      }
+    }
+  }
+
   getBucketResults (lastResults, bucket) {
     if (!lastResults) return null
 
@@ -142,7 +158,6 @@ class DataCopy extends Job {
 
     return lastResults
       .filter(x => x) // filtrando null
-      .sort((x, y) => y.executionTime - x.executionTime)
       .find(last => last.bucket.name === bucket)
   }
 

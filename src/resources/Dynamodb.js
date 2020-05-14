@@ -39,7 +39,8 @@ class Dynamodb extends Resource {
 
       resolve([{
         itens,
-        total: data.Count
+        total: data.Count,
+        label: 'full-scan'
       }])
     }))
   }
@@ -52,107 +53,154 @@ class Dynamodb extends Resource {
     log.debug('Last bucket result %O', lastResult)
     log.info('Processando streams para o bucket %s', bucket)
 
-    const dynamodbstreams = new AWS.DynamoDBStreams()
-    const tableStreams = await dynamodbstreams.listStreams({ TableName: bucket }).promise()
+    // pega as streams para a tabela
+    const streams = await this.getStreamsForTable(bucket)
 
-    if (!tableStreams.Streams.length) throw new Error('Bucket %s não tem streams associado a ele!', bucket)
+    // descrição das streams disponiveis
+    const descriptions = await Promise.all(
+      streams.map(stream => this.describeStream(stream))
+    )
 
-    // uma tabela pode ter mais de uma stream associada a ela
-    const pStreamDescribe = tableStreams.Streams.map(async stream => {
-      log.debug('Pegando informações sobre a stream %s', stream.StreamLabel)
-      const describe = await dynamodbstreams.describeStream({ StreamArn: stream.StreamArn }).promise()
-      return describe.StreamDescription
-    })
+    const dataP = descriptions.map(async description => {
+      log.silly('Informações da stream %O', description.StreamLabel)
+      log.debug('Status da stream %s: %s', description.StreamLabel, description.StreamStatus)
+      log.silly('Stream %s shards: %O', description.StreamLabel, description.Shards)
 
-    const streamDescribe = await Promise.all(pStreamDescribe)
-    const shardPromises = streamDescribe.map(stream => {
-      log.silly('Informações da stream %O', stream.StreamLabel)
-      log.debug('Status da stream %s: %s', stream.StreamLabel, stream.StreamStatus)
-      log.silly('Stream %s shards: %O', stream.StreamLabel, stream.Shards)
+      const toProcess = this.getClosedShard({ lastResult, description })
 
-      // pega o próximo shard a ser processado
-      const nextShard = lastResult[stream.StreamLabel]
-        ? stream.Shards.find(
-          shard => shard.ShardId === lastResult[stream.StreamLabel].shard.nextId
-        )
-        : stream.Shards[0]
-
-      return {
-        stream,
-        nextShard
-      }
-    }).map(async data => {
-      let iteratorResult
-      let records = []
-
-      const options = { shardId: data.nextShard.ShardId, streamArn: data.stream.StreamArn }
-      while ((iteratorResult = await this.getIterator(dynamodbstreams, options)).records.NextShardIterator) {
-        log.silly('Iterator records %O', iteratorResult.records)
-        records = records.concat(iteratorResult.records.Records)
-        options.shardIterator = iteratorResult.records.NextShardIterator
+      if (!toProcess) {
+        log.info('Todos os shards para a stream %s fechados já foram processados!', description.StreamLabel)
+        return null
       }
 
-      log.debug('Quantidade de registros no shard: %s', records.length)
-
-      const index = data.stream.Shards.findIndex(shard => shard.ShardId === data.nextShard.ShardId)
+      const recordsRaw = await this.getShardRecords({ description, shard: toProcess })
+      const formmated = recordsRaw.map(record => {
+        const parsed = this.parser.formatOut(record.dynamodb.NewImage)
+        parsed.eventName = record.eventName
+        return parsed
+      })
 
       return {
-        stream: data.stream,
-        currentShard: {
-          ...data.nextShard,
-          nextId: index === data.stream.Shards.length - 1
-            ? data.nextShard.ShardId
-            : data.stream.Shards[index + 1].ShardId
-        },
-        records
+        description,
+        shard: toProcess,
+        records: formmated,
+        lastProcessed: toProcess.ShardId,
+        processed: this.processedShards({ lastResult, stream: description.StreamLabel })
+          .concat([{
+            shard: toProcess.ShardId,
+            total: formmated.length
+          }])
       }
     })
 
-    const shards = await Promise.all(shardPromises)
+    const results = await Promise.all(dataP)
 
-    return shards.map(shard => {
-      shard.records = shard.records
-        .map(item => {
-          const parsed = this.parser.formatOut(item.dynamodb.NewImage)
-          parsed.eventName = item.eventName
-          return parsed
-        })
-
-      return shard
-    }).reduce((acc, atual) => {
+    return results.filter(r => r).reduce((acc, atual) => {
       acc.push({
-        label: atual.stream.StreamLabel,
         itens: atual.records,
-        naming: atual.currentShard.ShardId,
-        shard: atual.currentShard,
-        total: atual.records.length
+        naming: atual.shard.ShardId,
+        label: atual.description.StreamLabel,
+        lastProcessed: atual.lastProcessed,
+        processed: atual.processed
       })
 
       return acc
     }, [])
   }
 
-  async getIterator (dynamodbstreams, { shardId, streamArn, shardIterator }) {
-    // shard iterator
-    if (!shardIterator) {
-      const shardIt = await dynamodbstreams.getShardIterator({
+  getDynamoDbStreamsAPI () {
+    if (!this.streamsAPI) {
+      this.streamsAPI = new AWS.DynamoDBStreams()
+    }
+
+    return this.streamsAPI
+  }
+
+  async getStreamsForTable (tableName) {
+    const streamsAPI = await this.getDynamoDbStreamsAPI()
+
+    const tableStreams = await streamsAPI
+      .listStreams({ TableName: tableName })
+      .promise()
+
+    log.silly('Streams para a tabela %s: %O', tableName, tableStreams)
+    if (!tableStreams.Streams.length) throw new Error('Bucket %s não tem streams associado a ele!', tableName)
+
+    return tableStreams.Streams
+  }
+
+  async describeStream (stream) {
+    log.debug('Pegando informações sobre a stream %s', stream.StreamLabel)
+    const streamsAPI = await this.getDynamoDbStreamsAPI()
+
+    const describe = await streamsAPI
+      .describeStream({ StreamArn: stream.StreamArn })
+      .promise()
+
+    return describe.StreamDescription
+  }
+
+  processedShards ({ lastResult, stream }) {
+    if (!lastResult[stream] || !lastResult[stream].processed) return []
+    return lastResult[stream].processed
+  }
+
+  getClosedShard ({ description, lastResult }) {
+    const processed = this.processedShards({ lastResult, stream: description.StreamLabel })
+    log.debug('Processed shards %O', processed)
+
+    const closedShards = description.Shards
+      // inclui somente os não processados
+      .filter(shard => !processed.find(p => p.shard === shard.ShardId))
+      // inclui somente shard fechados
+      .filter(shard =>
+        shard.SequenceNumberRange &&
+        shard.SequenceNumberRange.EndingSequenceNumber
+      )
+
+    return closedShards.length
+      ? closedShards[0]
+      : null
+  }
+
+  async getShardRecords ({ description, shard }) {
+    const streamsAPI = await this.getDynamoDbStreamsAPI()
+
+    const initialIterator = await this.getShardIterator({
+      shardId: shard.ShardId,
+      streamArn: description.StreamArn
+    })
+
+    let records = []
+    let nextIterator = initialIterator
+
+    while (nextIterator) {
+      const results = await streamsAPI
+        .getRecords({ ShardIterator: nextIterator, Limit: 1000 })
+        .promise()
+
+      log.silly('Iterator records %O', results.Records)
+      log.debug('Next iterator %s', results.NextShardIterator)
+
+      records = records.concat(results.Records)
+      nextIterator = results.NextShardIterator
+    }
+
+    return records
+  }
+
+  async getShardIterator ({ shardId, streamArn }) {
+    const streamAPI = await this.getDynamoDbStreamsAPI()
+
+    const result = await streamAPI
+      .getShardIterator({
         ShardId: shardId,
         ShardIteratorType: 'TRIM_HORIZON',
         StreamArn: streamArn
-      }).promise()
+      })
+      .promise()
 
-      shardIterator = shardIt.ShardIterator
-    }
-
-    const records = await dynamodbstreams.getRecords({
-      ShardIterator: shardIterator,
-      Limit: 1000
-    }).promise()
-
-    return {
-      records,
-      shardIterator
-    }
+    return result.ShardIterator
   }
 
   insertData (data) {
