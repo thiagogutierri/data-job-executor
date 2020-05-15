@@ -32,6 +32,8 @@ class Dynamodb extends Resource {
     let scaneados = scan.ScannedCount
     // páginas limitadas a 1MB de dados
     while (scan.LastEvaluatedKey) {
+      log.debug('Itens scaneados até o momento %s', scaneados)
+      log.debug('Requisitando nova página de scan!')
       scan = await dynamo.scan({ TableName: bucket, ExclusiveStartKey: scan.LastEvaluatedKey }).promise()
 
       scaneados += scan.ScannedCount
@@ -47,7 +49,7 @@ class Dynamodb extends Resource {
     log.debug('Total de itens %s', result.total)
     log.debug('Total de itens scaneados %s', scaneados)
 
-    return result
+    return [result]
   }
 
   /**
