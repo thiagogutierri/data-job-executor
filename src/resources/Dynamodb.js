@@ -14,35 +14,40 @@ class Dynamodb extends Resource {
    * Faz dump de uma tabela do dynamo
    */
 
-  getFullData ({ bucket }) {
+  async getFullData ({ bucket }) {
     if (!bucket) throw new Error('Parâmetro bucket é obrigatório!')
 
     const dynamo = new AWS.DynamoDB()
-    const params = {
-      TableName: bucket
-    }
 
     log.debug('Scaneando a tabela %s', bucket)
+    let scan = await dynamo.scan({ TableName: bucket }).promise()
 
-    return new Promise((resolve, reject) => dynamo.scan(params, (err, data) => {
-      if (err) {
-        log.error('Erro no scan %O', err)
-        return reject(err)
-      }
+    const result = {
+      label: 'full-scan',
+      total: scan.Count,
+      // não usar a forma contrata do map se não o parser perde a referencia do this
+      itens: scan.Items.map(item => this.parser.formatOut(item))
+    }
 
-      log.debug('Tabela do dynamo scaneada!')
-      log.debug('Total de itens %s', data.Count)
-      log.debug('Total de itens scaneados %s', data.ScannedCount)
+    let scaneados = scan.ScannedCount
+    // páginas limitadas a 1MB de dados
+    while (scan.LastEvaluatedKey) {
+      scan = await dynamo.scan({ TableName: bucket, ExclusiveStartKey: scan.LastEvaluatedKey }).promise()
+
+      scaneados += scan.ScannedCount
+      result.total += scan.Count
 
       // não usar a forma contrata do map se não o parser perde a referencia do this
-      const itens = data.Items.map(item => this.parser.formatOut(item))
+      result.itens = result.itens.concat(
+        scan.Items.map(item => this.parser.formatOut(item))
+      )
+    }
 
-      resolve([{
-        itens,
-        total: data.Count,
-        label: 'full-scan'
-      }])
-    }))
+    log.debug('Tabela do dynamo scaneada!')
+    log.debug('Total de itens %s', result.total)
+    log.debug('Total de itens scaneados %s', scaneados)
+
+    return result
   }
 
   /**
