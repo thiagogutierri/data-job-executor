@@ -3,6 +3,8 @@ const JobFactory = require('./factories/JobFactory')
 const SchedulerFactory = require('./factories/SchedulerFactory')
 
 process.on('exit', (...args) => console.log('Alguem chamou o exit!', { args }))
+process.on('SIGABRT', (...args) => console.log('Alguem chamou o SIGABRT!', { args }))
+process.on('SIGINT', (...args) => console.log('Alguem chamou o SIGINT!', { args }))
 
 function start () {
   log.info('Inicializando a aplicação...')
