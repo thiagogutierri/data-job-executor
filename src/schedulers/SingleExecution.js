@@ -18,10 +18,7 @@ class SingleExecution extends Scheduler {
         log.error('Erro na execução do job!', err, err.stack)
         exitCode = 1
       })
-      .finally(() => {
-        log.info('Job finalizado, saindo!')
-        process.exit(exitCode)
-      })
+      .finally(() => process.exit(exitCode))
   }
 }
 
