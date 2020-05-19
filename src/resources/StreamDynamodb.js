@@ -30,26 +30,33 @@ class StreamDynamodb extends StreamResource {
     log.debug('Scaneando a tabela %s', bucket.name)
     const inStream = new Readable({
       async read () {
-        if (!first && !lastEvaluatedKey) {
-          // informando que não há mais dados
-          this.push(null)
-          return
+        try {
+          if (!first && !lastEvaluatedKey) {
+            // informando que não há mais dados
+            this.push(null)
+            return
+          }
+
+          first = false
+          log.debug('Requisitando nova página de scan!')
+          const options = {
+            TableName: bucket.name,
+            ExclusiveStartKey: undefined
+          }
+          const scan = await dynamo.scan(options).promise()
+
+          scaneados += scan.ScannedCount
+          log.debug('Itens scaneados até o momento %s', scaneados)
+
+          const formatado = scan.Items
+            .map(item => that.parser.formatOut(item))
+
+          // envia parte para o processo que ta escutando
+          this.push(JSON.stringify(formatado))
+          lastEvaluatedKey = scan.LastEvaluatedKey
+        } catch (err) {
+          log.error(err, err.stack)
         }
-
-        first = false
-        log.debug('Requisitando nova página de scan!')
-        const options = { TableName: bucket.name, ExclusiveStartKey: undefined }
-        const scan = await dynamo.scan(options).promise()
-
-        scaneados += scan.ScannedCount
-        log.debug('Itens scaneados até o momento %s', scaneados)
-
-        const formatado = scan.Items
-          .map(item => that.parser.formatOut(item))
-
-        // envia parte para o processo que ta escutando
-        this.push(JSON.stringify(formatado))
-        lastEvaluatedKey = scan.LastEvaluatedKey
       }
     })
 
