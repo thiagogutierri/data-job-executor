@@ -57,7 +57,9 @@ class StreamDataCopy extends StreamJob {
     currentBuffer = currentBuffer.concat(data)
     results.total += data.length
 
-    log.debug('Recebendo data chunk, current buffer size %s', currentBuffer)
+    log.debug('Recebendo data chunk, current buffer size %s', currentBuffer.length)
+    log.debug('Bucket items per json %s', bucket.itemsPerJson)
+
     if (currentBuffer.length < bucket.itemsPerJson) return
 
     while (currentBuffer.length >= bucket.itemsPerJson) {
