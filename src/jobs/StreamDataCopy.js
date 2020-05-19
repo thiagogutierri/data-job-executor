@@ -38,18 +38,19 @@ class StreamDataCopy extends StreamJob {
       return new Promise((resolve, reject) => {
         let currentBuffer = []
 
-        inStream.on('data',
-          chunk => this._onData(bucket, results, outResource, chunk, currentBuffer)
+        inStream.on('data', chunk => {
+          inStream.pause()
+
+          this._onData(bucket, results, outResource, chunk, currentBuffer)
             .then(cb => {
               currentBuffer = cb
+              inStream.read()
             })
+        })
+
+        inStream.on('finish', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
+          .then(resolve)
         )
-
-        inStream.on('end', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
-          .then(resolve))
-
-        inStream.on('close', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
-          .then(resolve))
 
         inStream.on('error', reject)
       })
@@ -63,14 +64,14 @@ class StreamDataCopy extends StreamJob {
     const buffer = currentBuffer.concat(data)
     results.total += data.length
 
-    log.debug('Recebendo data chunk, current buffer size %s', currentBuffer.length)
+    log.debug('Recebendo data chunk de tamanho %s, current buffer size %s', data.length, buffer.length)
     log.debug('Bucket items per json %s', bucket.itemsPerJson)
 
     if (buffer.length < bucket.itemsPerJson) return buffer
 
     while (buffer.length >= bucket.itemsPerJson) {
       const part = buffer.splice(0, bucket.itemsPerJson)
-      await resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket })
+      if (part.length) { await resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket }) }
     }
 
     return buffer
