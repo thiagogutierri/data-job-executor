@@ -15,7 +15,7 @@ class SingleExecution extends Scheduler {
     let exitCode = 0
     job.execute()
       .catch(err => {
-        log.error('Erro na execução do job!', err.stack)
+        log.error('Erro na execução do job!', err, err.stack)
         exitCode = 1
       })
       .finally(() => process.exit(exitCode))

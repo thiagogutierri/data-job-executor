@@ -4,7 +4,7 @@
   "description": "Move dados de um recurso para outro de tempos em tempos fazendo as conversões necessárias.",
   "main": "src/index.js",
   "scripts": {
-    "dev": "DATA_FORMATTER=aws LOG_LEVEL=silly nodemon --ignore logs/ --ignore tests/ src/index.js",
+    "dev": "DATA_FORMATTER=aws JOB=StreamDataCopy LOG_LEVEL=debug nodemon --ignore logs/ --ignore tests/ src/index.js",
     "test": "LOG_LEVEL=silly mocha",
     "start": "NODE_ENV=production node src/index.js"
   },

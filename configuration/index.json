@@ -1,7 +1,7 @@
 {
   "job": {
-    "from": "Dynamodb",
-    "to": "Hdfs",
+    "from": "StreamDynamodb",
+    "to": "StreamHdfs",
     "resultSource": {
       "type": "FileResultsSource",
       "path": "logs/results"

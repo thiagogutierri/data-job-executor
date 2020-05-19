@@ -114,24 +114,6 @@ class DataCopy extends Job {
     }
   }
 
-  /**
-   * Cria um job results source com base na configuração do job config source.
-   * Caso não esteja configurado um result source, o job sempre executará full scan.
-   */
-
-  async getResultsSource () {
-    if (!this.configSource.configuration.job.resultSource) {
-      log.info('Result source não configurado, usando o default!')
-      log.info('Para usar jobs incrementais, por favor, configure um result source no jobConfigSource')
-      log.info('FileConfigSource example: { "resultSource": { "type": "FileResultsSource", "path": "results" } }')
-    }
-
-    const source = this.configSource.configuration.job.resultSource || { type: 'JobResultsSource' }
-    const ResultsSource = require(`./config/${source.type}`)
-
-    return new ResultsSource(this.configSource.configuration.job.resultSource)
-  }
-
   updateBucketResults (lastResults, bucket, results) {
     const index = lastResults
       .filter(x => x) // filtrando null
@@ -145,20 +127,6 @@ class DataCopy extends Job {
         ...results
       }
     }
-  }
-
-  getBucketResults (lastResults, bucket) {
-    if (!lastResults) return null
-
-    // arquivo em um formato não conhecido
-    if (!Array.isArray(lastResults)) {
-      log.warn('Resultados em formato desconhecido!')
-      return null
-    }
-
-    return lastResults
-      .filter(x => x) // filtrando null
-      .find(last => last.bucket.name === bucket)
   }
 
   naming (config) {
