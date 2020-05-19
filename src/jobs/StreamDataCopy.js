@@ -41,8 +41,14 @@ class StreamDataCopy extends StreamJob {
         inStream.on('data', chunk => this._onData(bucket, results, outResource, chunk, currentBuffer))
         inStream.on('error', reject)
         // inStream.pause()
-        inStream.on('end', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
-        inStream.on('close', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
+        inStream.on('end', async () => {
+          await this._end(outResource, currentBuffer, resultsSource, lastResults, results)
+          resolve()
+        })
+        inStream.on('close', async () => {
+          await this._end(outResource, currentBuffer, resultsSource, lastResults, results)
+          resolve()
+        })
       })
     })
 
@@ -51,7 +57,7 @@ class StreamDataCopy extends StreamJob {
 
   _onData (bucket, results, resource, chunk, currentBuffer) {
     const data = JSON.parse(chunk.toString())
-    currentBuffer.concat(data)
+    currentBuffer = currentBuffer.concat(data)
     results.total += data.length
 
     if (currentBuffer.length < bucket.itemsPerJson) return
