@@ -48,8 +48,8 @@ class StreamDataCopy extends StreamJob {
             })
         })
 
-        inStream.on('finish', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
-          .then(resolve)
+        inStream.on('end', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
+          .then(() => resolve())
         )
 
         inStream.on('error', reject)
@@ -57,6 +57,7 @@ class StreamDataCopy extends StreamJob {
     })
 
     await Promise.all(promises)
+    log.info('Finalizando execução do job')
   }
 
   async _onData (bucket, results, resource, chunk, currentBuffer) {
@@ -88,6 +89,8 @@ class StreamDataCopy extends StreamJob {
     }
 
     lastResults.push(results)
+
+    log.info('Gravando resultado da execução: %O', results)
     await resultsSource.write(lastResults)
   }
 }
