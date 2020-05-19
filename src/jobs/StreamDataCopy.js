@@ -58,7 +58,7 @@ class StreamDataCopy extends StreamJob {
     await Promise.all(promises)
   }
 
-  _onData (bucket, results, resource, chunk, currentBuffer) {
+  async _onData (bucket, results, resource, chunk, currentBuffer) {
     const data = JSON.parse(chunk.toString())
     currentBuffer = currentBuffer.concat(data)
     results.total += data.length
@@ -70,7 +70,7 @@ class StreamDataCopy extends StreamJob {
 
     while (currentBuffer.length >= bucket.itemsPerJson) {
       const part = currentBuffer.splice(0, bucket.itemsPerJson)
-      resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket })
+      await resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket })
     }
 
     return currentBuffer
