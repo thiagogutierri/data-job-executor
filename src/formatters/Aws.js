@@ -8,7 +8,7 @@ class Aws extends Formatter {
   }
 
   static formatOut (data) {
-    log.silly('Formatando o dado da AWS %O para o modelo JSON com maps de delimitador: "_"', data)
+    // log.silly('Formatando o dado da AWS %O para o modelo JSON com maps de delimitador: "_"', data)
 
     const retorno = {}
     this.M(retorno, '', { M: data })
@@ -21,52 +21,52 @@ class Aws extends Formatter {
   }
 
   static N (data, path, obj) {
-    log.silly('Parseando number: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando number: %s, %O, %O', path, data, obj)
     data[path] = Number(this.getData(obj, 'N'))
   }
 
   static S (data, path, obj) {
-    log.silly('Parseando string: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando string: %s, %O, %O', path, data, obj)
     data[path] = String(this.getData(obj, 'S'))
   }
 
   static B (data, path, obj) {
-    log.silly('Parseando binario: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando binario: %s, %O, %O', path, data, obj)
     data[path] = Buffer.from(this.getData(obj, 'B'), 'binary').toString('base64')
   }
 
   static SS (data, path, obj) {
-    log.silly('Parseando string set: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando string set: %s, %O, %O', path, data, obj)
     obj.SS.forEach((s, index) => this.S(data, `${path}[${index}]`, s))
   }
 
   static NS (data, path, obj) {
-    log.silly('Parseando number set: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando number set: %s, %O, %O', path, data, obj)
     obj.NS.forEach((n, index) => this.N(data, `${path}[${index}]`, n))
   }
 
   static BS (data, path, obj) {
-    log.silly('Parseando binary set: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando binary set: %s, %O, %O', path, data, obj)
     obj.BS.forEach((b, index) => this.B(data, `${path}[${index}]`, b))
   }
 
   static L (data, path, obj) {
-    log.silly('Parseando list: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando list: %s, %O, %O', path, data, obj)
     obj.L.forEach((m, index) => this.M(data, `${path}[${index}]`, m))
   }
 
   static NULL (data, path, obj) {
-    log.silly('Parseando null: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando null: %s, %O, %O', path, data, obj)
     data[path] = null
   }
 
   static BOOL (data, path, obj) {
-    log.silly('Parseando boolean: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando boolean: %s, %O, %O', path, data, obj)
     data[path] = obj === 'true'
   }
 
   static M (data, path, obj) {
-    log.silly('Parseando map: %s, %O, %O', path, data, obj)
+    // log.silly('Parseando map: %s, %O, %O', path, data, obj)
 
     Object.keys(obj.M).forEach(key =>
       Object.keys(obj.M[key]).forEach(f => {
