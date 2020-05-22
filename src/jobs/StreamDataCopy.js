@@ -57,7 +57,7 @@ class StreamDataCopy extends StreamJob {
         })
 
         inStream.on('end', () => {
-          log.info('Esperando as operações de escrita pendentes finalizarem.')
+          log.info('Esperando %s operações de escrita finalizarem.', insertPromises.length)
           return Promise.all(insertPromises)
             .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
             .then(() => resolve())
