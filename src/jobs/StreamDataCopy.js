@@ -73,6 +73,8 @@ class StreamDataCopy extends StreamJob {
   }
 
   async _onData (bucket, results, resource, chunk, currentBuffer) {
+    const insertPromises = []
+
     const data = JSON.parse(chunk.toString('utf8'))
     const buffer = currentBuffer.concat(data)
     results.total += data.length
@@ -80,9 +82,13 @@ class StreamDataCopy extends StreamJob {
     log.debug('Recebendo data chunk de tamanho %s, current buffer size %s', data.length, buffer.length)
     log.debug('Bucket items per json %s', bucket.itemsPerJson)
 
-    if (buffer.length < bucket.itemsPerJson) return buffer
+    if (buffer.length < bucket.itemsPerJson) {
+      return {
+        buffer,
+        insertPromises
+      }
+    }
 
-    const insertPromises = []
     while (buffer.length >= bucket.itemsPerJson) {
       const part = buffer.splice(0, bucket.itemsPerJson)
       if (part.length) {
