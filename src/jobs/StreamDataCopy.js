@@ -32,7 +32,7 @@ class StreamDataCopy extends StreamJob {
     const promises = this.jobBuckets().map(async bucket => {
       // decidir se é full ou incremental
       const bucketLastResult = this.getBucketResults(lastResults, bucket.name)
-      const { inStream, naming, results } = await this.executeIngestionJob({ lastResult: bucketLastResult, bucket, resource: inResource })
+      const { inStream, results } = await this.executeIngestionJob({ lastResult: bucketLastResult, bucket, resource: inResource })
 
       return new Promise((resolve, reject) => {
         let currentBuffer = []
@@ -44,7 +44,7 @@ class StreamDataCopy extends StreamJob {
           log.silly('Recebendo %s bytes de informação', chunk.length)
           const received = JSON.parse(chunk.toString('utf8'))
 
-          this._onData(bucket, results, outResource, received.data, currentBuffer, naming)
+          this._onData(bucket, results, outResource, received.data, currentBuffer, received.naming)
             .then(cb => {
               log.silly('Resumindo a stream!')
               currentBuffer = cb.buffer
@@ -90,7 +90,6 @@ class StreamDataCopy extends StreamJob {
       }
     }
 
-    console.log(bucket, this.fullData)
     while (
       (this.fullData && buffer.length >= bucket.itemsPerJson) ||
       (!this.fullData && buffer.length)
@@ -99,9 +98,10 @@ class StreamDataCopy extends StreamJob {
       if (part.length) {
         insertPromises.push(
           resource.insertData({
+            bucket,
             data: part,
             outName: typeof naming === 'function' ? naming() : naming,
-            bucket
+            append: this.partialData
           })
         )
       }

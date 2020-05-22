@@ -58,7 +58,10 @@ class StreamDynamodb extends StreamResource {
           .map(item => that.parser.formatOut(item))
 
         log.silly('Quantidade de itens formatados %s', formatado.length)
-        const buff = Buffer.from(JSON.stringify({ data: formatado }))
+        const buff = Buffer.from(JSON.stringify({
+          data: formatado,
+          naming: () => `${bucket.name}_${Date.now()}`
+        }))
 
         log.silly('Buffer a ser enviado %O', buff)
 
@@ -70,7 +73,6 @@ class StreamDynamodb extends StreamResource {
 
     return {
       inStream,
-      naming: () => `${bucket.name}_${Date.now()}`,
       results: {
         bucket,
         total: 0,
@@ -111,39 +113,68 @@ class StreamDynamodb extends StreamResource {
       })
       .filter(data => data.toProcess)
 
-    let naming = null
     const that = this
-
+    let isFirst = true
+    let nextIterator = null
+    let totalRecords = 0
+    let currentData = null
     const inStream = new Readable({
       async read () {
-        const data = descriptions.shift()
-        if (!data) return this.push(null)
+        if (!currentData) currentData = descriptions.shift()
+        if (!currentData) return this.push(null)
 
-        const { description, toProcess } = data
+        const { description, toProcess } = currentData
 
-        const recordsRaw = await that.getShardRecords({ description, shard: toProcess })
-        const formmated = recordsRaw.map(record => {
+        if (isFirst) {
+          nextIterator = await that.getShardIterator({
+            shardId: toProcess.ShardId,
+            streamArn: description.StreamArn
+          })
+
+          isFirst = false
+        }
+
+        const streamsAPI = await that.getDynamoDbStreamsAPI()
+        const results = await streamsAPI
+          .getRecords({
+            ShardIterator: nextIterator,
+            Limit: 1000
+          })
+          .promise()
+
+        log.silly('Iterator records %O', results.Records)
+        log.silly('Next iterator %s', results.NextShardIterator)
+
+        const formmated = results.Records.map(record => {
           const parsed = that.parser.formatOut(record.dynamodb.NewImage)
           parsed.eventName = record.eventName
           return parsed
         })
 
-        naming = () => toProcess.ShardId
-
+        totalRecords += formmated.length
         if (!lastResult[description.StreamLabel]) {
           lastResult[description.StreamLabel] = {
             processed: []
           }
         }
 
-        lastResult[description.StreamLabel].lastProcessed = toProcess.ShardId
-        lastResult[description.StreamLabel].processed.push({
-          shard: toProcess.ShardId,
-          total: recordsRaw.length
-        })
+        nextIterator = results.NextShardIterator
+        if (!nextIterator) {
+          lastResult[description.StreamLabel].lastProcessed = toProcess.ShardId
+          lastResult[description.StreamLabel].processed.push({
+            shard: toProcess.ShardId,
+            total: totalRecords
+          })
+
+          // setando para processar a próxima stream
+          isFirst = true
+          currentData = null
+          nextIterator = null
+        }
 
         const toSend = {
           data: formmated,
+          naming: toProcess.ShardId,
           result: description.StreamLabel,
           resultData: lastResult[description.StreamLabel]
         }
@@ -153,7 +184,6 @@ class StreamDynamodb extends StreamResource {
     })
 
     return {
-      naming,
       results: {
         ...lastResult,
         ...{ executionTime: Date.now() }
