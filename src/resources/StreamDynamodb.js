@@ -37,8 +37,10 @@ class StreamDynamodb extends StreamResource {
         }
 
         first = false
+
+        log.silly('Last evaluated key %s', lastEvaluatedKey)
         log.info('Requisitando nova página de scan!')
-        const options = { TableName: bucket.name, ExclusiveStartKey: undefined }
+        const options = { TableName: bucket.name, ExclusiveStartKey: lastEvaluatedKey }
         const scan = await dynamo.scan(options).promise()
 
         scaneados += scan.ScannedCount

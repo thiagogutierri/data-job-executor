@@ -37,6 +37,7 @@ class StreamDataCopy extends StreamJob {
       const results = { bucket, label, total: 0, executionTime: Date.now() }
       return new Promise((resolve, reject) => {
         let currentBuffer = []
+        let insertPromises = []
 
         inStream.on('data', chunk => {
           log.silly('Recebendo %s bytes de informação', chunk.length)
@@ -48,16 +49,20 @@ class StreamDataCopy extends StreamJob {
           this._onData(bucket, results, outResource, chunk, currentBuffer)
             .then(cb => {
               log.silly('Resumindo a stream!')
-              currentBuffer = cb
+              currentBuffer = cb.buffer
+              insertPromises = insertPromises.concat(cb.insertPromises)
               inStream.resume()
             })
             .catch(reject)
         })
 
-        inStream.on('end', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
-          .then(() => resolve())
-          .catch(reject)
-        )
+        inStream.on('end', () => {
+          log.info('Esperando as operações de escrita pendentes finalizarem.')
+          return Promise.all(insertPromises)
+            .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
+            .then(() => resolve())
+            .catch(reject)
+        })
 
         inStream.on('error', reject)
       })
@@ -77,12 +82,24 @@ class StreamDataCopy extends StreamJob {
 
     if (buffer.length < bucket.itemsPerJson) return buffer
 
+    const insertPromises = []
     while (buffer.length >= bucket.itemsPerJson) {
       const part = buffer.splice(0, bucket.itemsPerJson)
-      if (part.length) { resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket }) }
+      if (part.length) {
+        insertPromises.push(
+          resource.insertData({
+            data: part,
+            outName: `${bucket.name}_${Date.now()}`,
+            bucket
+          })
+        )
+      }
     }
 
-    return buffer
+    return {
+      buffer,
+      insertPromises
+    }
   }
 
   async _end (resource, currentBuffer, resultsSource, lastResults, results) {
