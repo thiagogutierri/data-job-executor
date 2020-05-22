@@ -79,7 +79,7 @@ class StreamDataCopy extends StreamJob {
 
     while (buffer.length >= bucket.itemsPerJson) {
       const part = buffer.splice(0, bucket.itemsPerJson)
-      if (part.length) { await resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket }) }
+      if (part.length) { resource.insertData({ data: part, outName: `${bucket.name}_${Date.now()}`, bucket }) }
     }
 
     return buffer
