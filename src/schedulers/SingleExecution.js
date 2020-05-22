@@ -12,13 +12,13 @@ class SingleExecution extends Scheduler {
     log.debug('Criando scheduler para o job %O', job)
 
     // executa
-    // let exitCode = 0
+    let exitCode = 0
     job.execute()
       .catch(err => {
         log.error('Erro na execução do job!', err, err.stack)
-        // exitCode = 1
+        exitCode = 1
       })
-      // .finally(() => process.exit(exitCode))
+      .finally(() => process.exit(exitCode))
   }
 }
 
