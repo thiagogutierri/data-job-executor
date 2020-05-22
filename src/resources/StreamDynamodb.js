@@ -47,8 +47,13 @@ class StreamDynamodb extends StreamResource {
         const formatado = scan.Items
           .map(item => that.parser.formatOut(item))
 
+        log.debug('Quantidade de itens formatados %s', formatado.length)
+        const buff = Buffer.from(JSON.stringify(formatado))
+
+        log.debug('Buffer a ser enviado %O', buff)
+
         // envia parte para o processo que ta escutando
-        this.push(JSON.stringify(formatado))
+        this.push(buff)
         lastEvaluatedKey = scan.LastEvaluatedKey
       }
     })

@@ -61,7 +61,7 @@ class StreamDataCopy extends StreamJob {
   }
 
   async _onData (bucket, results, resource, chunk, currentBuffer) {
-    const data = JSON.parse(chunk.toString())
+    const data = JSON.parse(chunk.toString('utf8'))
     const buffer = currentBuffer.concat(data)
     results.total += data.length
 
