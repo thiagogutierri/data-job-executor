@@ -83,15 +83,19 @@ class StreamDataCopy extends StreamJob {
     log.debug('Current buffer size %s', buffer.length)
     log.debug('Bucket items per json %s', bucket.itemsPerJson)
 
-    if (buffer.length < bucket.itemsPerJson) {
+    if (this.fullData && buffer.length < bucket.itemsPerJson) {
       return {
         buffer,
         insertPromises
       }
     }
 
-    while (buffer.length >= bucket.itemsPerJson) {
-      const part = buffer.splice(0, bucket.itemsPerJson)
+    console.log(bucket, this.fullData)
+    while (
+      (this.fullData && buffer.length >= bucket.itemsPerJson) ||
+      (!this.fullData && buffer.length)
+    ) {
+      const part = buffer.splice(0, this.fullData ? bucket.itemsPerJson : buffer.length)
       if (part.length) {
         insertPromises.push(
           resource.insertData({

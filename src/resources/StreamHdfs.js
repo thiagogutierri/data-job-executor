@@ -14,6 +14,7 @@ class StreamHdfs extends StreamResource {
 
   async insertData ({ data, outName, bucket }) {
     // full path
+    console.log('Length', data.length)
     const path = `${this.config.hdfs.writePath}/${bucket.name}/${outName}`
 
     log.debug('Salvando arquivo no path %s', path)

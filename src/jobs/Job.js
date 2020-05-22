@@ -90,6 +90,9 @@ class Job {
       lastResult
     }
 
+    this.partialData = !!lastResult
+    this.fullData = !lastResult
+
     return lastResult
       ? resource.getPartialData(options)
       : resource.getFullData(options)
