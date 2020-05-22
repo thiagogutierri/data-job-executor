@@ -32,25 +32,28 @@ class StreamDataCopy extends StreamJob {
     const promises = this.jobBuckets().map(async bucket => {
       // decidir se é full ou incremental
       const bucketLastResult = this.getBucketResults(lastResults, bucket.name)
-      const { inStream, label } = await this.executeIngestionJob({ lastResults: bucketLastResult, bucket, resource: inResource })
+      const { inStream, naming, results } = await this.executeIngestionJob({ lastResult: bucketLastResult, bucket, resource: inResource })
 
-      const results = { bucket, label, total: 0, executionTime: Date.now() }
       return new Promise((resolve, reject) => {
         let currentBuffer = []
         let insertPromises = []
 
         inStream.on('data', chunk => {
-          log.silly('Recebendo %s bytes de informação', chunk.length)
-          log.silly('Pausing stream')
-
           inStream.pause()
 
-          log.silly('Sending to on data!')
-          this._onData(bucket, results, outResource, chunk, currentBuffer)
+          log.silly('Recebendo %s bytes de informação', chunk.length)
+          const received = JSON.parse(chunk.toString('utf8'))
+
+          this._onData(bucket, results, outResource, received.data, currentBuffer, naming)
             .then(cb => {
               log.silly('Resumindo a stream!')
               currentBuffer = cb.buffer
               insertPromises = insertPromises.concat(cb.insertPromises)
+
+              if (received.result) {
+                results[received.result] = received.resultData
+              }
+
               inStream.resume()
             })
             .catch(reject)
@@ -72,14 +75,12 @@ class StreamDataCopy extends StreamJob {
     log.info('Finalizando execução do job')
   }
 
-  async _onData (bucket, results, resource, chunk, currentBuffer) {
+  async _onData (bucket, results, resource, data, currentBuffer, naming = () => Date.now()) {
     const insertPromises = []
-
-    const data = JSON.parse(chunk.toString('utf8'))
     const buffer = currentBuffer.concat(data)
     results.total += data.length
 
-    log.debug('Recebendo data chunk de tamanho %s, current buffer size %s', data.length, buffer.length)
+    log.debug('Current buffer size %s', buffer.length)
     log.debug('Bucket items per json %s', bucket.itemsPerJson)
 
     if (buffer.length < bucket.itemsPerJson) {
@@ -95,7 +96,7 @@ class StreamDataCopy extends StreamJob {
         insertPromises.push(
           resource.insertData({
             data: part,
-            outName: `${bucket.name}_${Date.now()}`,
+            outName: typeof naming === 'function' ? naming() : naming,
             bucket
           })
         )
@@ -118,7 +119,12 @@ class StreamDataCopy extends StreamJob {
       })
     }
 
-    lastResults.push(results)
+    const index = lastResults.findIndex(lr => lr.bucket.name === results.bucket.name)
+    if (index === -1) {
+      lastResults.push(results)
+    } else {
+      lastResults[index] = results
+    }
 
     log.info('Gravando resultado da execução: %O', results)
     await resultsSource.write(lastResults)

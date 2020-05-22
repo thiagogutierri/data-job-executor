@@ -2,8 +2,6 @@ const log = require('./logger')(__filename)
 const JobFactory = require('./factories/JobFactory')
 const SchedulerFactory = require('./factories/SchedulerFactory')
 
-process.on('exit', (...args) => console.log('Alguem chamou o exit!', { args }))
-
 function start () {
   log.info('Inicializando a aplicação...')
 

@@ -77,20 +77,20 @@ class Job {
 
     return lastResults
       .filter(x => x) // filtrando null
-      .sort((x, y) => x.executionTime - y.executionTime)
+      .sort((x, y) => y.executionTime - x.executionTime)
       .find(last => last.bucket.name === bucket)
   }
 
   /**
    * Decide se faz full scan ou parcial
    */
-  executeIngestionJob ({ lastResults, bucket, resource }) {
+  executeIngestionJob ({ lastResult, bucket, resource }) {
     const options = {
       bucket,
-      lastResults
+      lastResult
     }
 
-    return lastResults
+    return lastResult
       ? resource.getPartialData(options)
       : resource.getFullData(options)
   }
