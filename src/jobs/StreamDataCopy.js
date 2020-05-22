@@ -38,17 +38,19 @@ class StreamDataCopy extends StreamJob {
       return new Promise((resolve, reject) => {
         let currentBuffer = []
 
-        const that = this
-        inStream.on('readable', async function () {
-          const chunk = this.read()
-
-          if (!chunk) return
-
-          log.silly('Recebendo chunk data %O', chunk)
+        inStream.on('data', chunk => {
+          log.silly('Recebendo %s bytes de informação', chunk.length)
           log.silly('Pausing stream')
 
+          inStream.pause()
+
           log.silly('Sending to on data!')
-          currentBuffer = await that._onData(bucket, results, outResource, chunk, currentBuffer)
+          this._onData(bucket, results, outResource, chunk, currentBuffer)
+            .then(cb => {
+              log.silly('Resumindo a stream!')
+              currentBuffer = cb
+              inStream.resume()
+            })
             .catch(reject)
         })
 
