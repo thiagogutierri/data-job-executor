@@ -81,7 +81,7 @@ class StreamDataCopy extends StreamJob {
     results.total += data.length
 
     log.debug('Current buffer size %s', buffer.length)
-    log.debug('Bucket items per json %s', bucket.itemsPerJson)
+    log.silly('Bucket items per json %s', bucket.itemsPerJson)
 
     if (this.fullData && buffer.length < bucket.itemsPerJson) {
       return {
