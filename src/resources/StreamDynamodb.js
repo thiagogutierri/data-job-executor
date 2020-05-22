@@ -37,20 +37,20 @@ class StreamDynamodb extends StreamResource {
         }
 
         first = false
-        log.debug('Requisitando nova página de scan!')
+        log.info('Requisitando nova página de scan!')
         const options = { TableName: bucket.name, ExclusiveStartKey: undefined }
         const scan = await dynamo.scan(options).promise()
 
         scaneados += scan.ScannedCount
-        log.debug('Itens scaneados até o momento %s', scaneados)
+        log.info('Itens scaneados até o momento %s', scaneados)
 
         const formatado = scan.Items
           .map(item => that.parser.formatOut(item))
 
-        log.debug('Quantidade de itens formatados %s', formatado.length)
+        log.silly('Quantidade de itens formatados %s', formatado.length)
         const buff = Buffer.from(JSON.stringify(formatado))
 
-        log.debug('Buffer a ser enviado %O', buff)
+        log.silly('Buffer a ser enviado %O', buff)
 
         // envia parte para o processo que ta escutando
         this.push(buff)

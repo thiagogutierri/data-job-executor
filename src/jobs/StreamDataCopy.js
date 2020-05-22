@@ -39,17 +39,24 @@ class StreamDataCopy extends StreamJob {
         let currentBuffer = []
 
         inStream.on('data', chunk => {
+          log.silly('Recebendo chunk data %O', chunk)
+          log.silly('Pausing stream')
+
           inStream.pause()
 
+          log.silly('Sending to on data!')
           this._onData(bucket, results, outResource, chunk, currentBuffer)
             .then(cb => {
+              log.silly('Requisitando novas informações da stream!')
               currentBuffer = cb
               inStream.read()
             })
+            .catch(reject)
         })
 
         inStream.on('end', () => this._end(outResource, currentBuffer, resultsSource, lastResults, results)
           .then(() => resolve())
+          .catch(reject)
         )
 
         inStream.on('error', reject)
