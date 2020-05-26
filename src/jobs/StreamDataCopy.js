@@ -96,14 +96,12 @@ class StreamDataCopy extends StreamJob {
     ) {
       const part = buffer.splice(0, this.fullData ? bucket.itemsPerJson : buffer.length)
       if (part.length) {
-        insertPromises.push(
-          resource.insertData({
-            bucket,
-            data: part,
-            outName: typeof naming === 'function' ? naming() : naming,
-            append: this.partialData
-          })
-        )
+        await resource.insertData({
+          bucket,
+          data: part,
+          outName: typeof naming === 'function' ? naming() : naming,
+          append: this.partialData
+        })
       }
     }
 
