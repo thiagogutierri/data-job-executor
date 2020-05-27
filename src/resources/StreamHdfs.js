@@ -16,24 +16,19 @@ class StreamHdfs extends StreamResource {
     // full path
     const path = `${this.config.hdfs.writePath}/${bucket.name}/${outName}`
 
+    // file exists
+    const exists = new Promise((resolve, reject) => this.client.exists(path, resolve))
+
     log.debug('Salvando arquivo no path %s', path)
     log.silly('Objeto sendo gravado %O', data)
 
-    let remoteFileStream = this.client.createWriteStream(path, append)
+    const remoteFileStream = this.client.createWriteStream(path, append && exists)
     const readable = Readable.from(data.map(item => JSON.stringify(item)).join('\n'))
 
     readable.pipe(remoteFileStream)
 
     return new Promise((resolve, reject) => {
-      remoteFileStream.on('error', (err) => {
-        if (err.message.indexOf('not found.') > -1) {
-          readable.unpipe(remoteFileStream)
-          remoteFileStream = this.client.createWriteStream(path, false)
-          readable.pipe(remoteFileStream)
-          return
-        }
-        reject(err)
-      })
+      remoteFileStream.on('error', reject)
       remoteFileStream.on('finish', resolve)
     })
   }
