@@ -44,7 +44,7 @@ class StreamHdfs extends StreamResource {
       }
     }
 
-    return Promise.resolve(true)
+    return true
   }
 }
 
