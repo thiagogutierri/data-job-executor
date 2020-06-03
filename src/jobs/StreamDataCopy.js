@@ -56,7 +56,7 @@ class StreamDataCopy extends StreamJob {
 
               inStream.resume()
             })
-            .catch(reject)
+            .catch(err => reject(err))
         })
 
         inStream.on('end', () => {
@@ -64,10 +64,10 @@ class StreamDataCopy extends StreamJob {
           return Promise.all(insertPromises)
             .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
             .then(() => resolve())
-            .catch(error => reject(error))
+            .catch(err => reject(err))
         })
 
-        inStream.on('error', reject)
+        inStream.on('error', err => reject(err))
       })
     })
 
