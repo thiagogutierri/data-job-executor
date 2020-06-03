@@ -43,6 +43,7 @@ class StreamDataCopy extends StreamJob {
 
           log.silly('Recebendo %s bytes de informação', chunk.length)
           const received = JSON.parse(chunk.toString('utf8'))
+          if (!received.data || !received.data.length) return
 
           this._onData(bucket, results, outResource, received.data, currentBuffer, received.naming)
             .then(cb => {
@@ -117,7 +118,7 @@ class StreamDataCopy extends StreamJob {
   }
 
   async _end (resource, currentBuffer, resultsSource, lastResults, results) {
-    if (currentBuffer.length) {
+    if (currentBuffer.length || (this.partialData && results.total)) {
       // caso não tenha gravado todos ainda
       await resource.insertData({
         data: currentBuffer,
