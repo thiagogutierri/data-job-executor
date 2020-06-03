@@ -34,18 +34,17 @@ class StreamHdfs extends StreamResource {
 
     // Salva no hdfs quando não estiver fazendo mais append
     if (flush) {
-      // certificando que o path no hdfs está criado
-      await OS.run(this.createHdfsFilePath(bucket.name))
-      await OS.run(this.shellCommand(bucket.name, outName, osPath)).catch(async err => {
+      log.debug('Fazendo flush para o HDFS')
+      try {
+        // certificando que o path no hdfs está criado
+        await OS.run(this.createHdfsFilePath(bucket.name))
+        await OS.run(this.shellCommand(bucket.name, outName, osPath))
+      } finally {
         await FileSystem.delete(osPath)
-        throw err
-      })
+      }
     }
 
-    // remove o arquivo temporário do so
-    return flush
-      ? FileSystem.delete(osPath)
-      : Promise.resolve()
+    return Promise.resolve(true)
   }
 }
 

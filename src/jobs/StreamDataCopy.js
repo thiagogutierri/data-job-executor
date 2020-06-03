@@ -102,7 +102,8 @@ class StreamDataCopy extends StreamJob {
             data: part,
             outName: typeof naming === 'function' ? naming() : naming,
             append: this.partialData,
-            // se for full-scan salva sempre que tiver a quantidade de itens, se não espera terminar o shard
+            // se for full-scan salva sempre que tiver a quantidade de itens,
+            // se não espera terminar o shard
             flush: this.fullData
           })
         )
