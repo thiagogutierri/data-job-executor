@@ -101,7 +101,9 @@ class StreamDataCopy extends StreamJob {
             bucket,
             data: part,
             outName: typeof naming === 'function' ? naming() : naming,
-            append: this.partialData
+            append: this.partialData,
+            // se for full-scan salva sempre que tiver a quantidade de itens, se não espera terminar o shard
+            flush: this.fullData
           })
         )
       }
@@ -119,7 +121,10 @@ class StreamDataCopy extends StreamJob {
       await resource.insertData({
         data: currentBuffer,
         outName: `${results.bucket.name}_${Date.now()}`,
-        bucket: results.bucket
+        bucket: results.bucket,
+        append: true,
+        // Terminou a execução, faz flush
+        flush: true
       })
     }
 
