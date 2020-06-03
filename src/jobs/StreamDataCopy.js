@@ -43,7 +43,6 @@ class StreamDataCopy extends StreamJob {
 
           log.silly('Recebendo %s bytes de informação', chunk.length)
           const received = JSON.parse(chunk.toString('utf8'))
-          if (!received.data || !received.data.length) return
 
           this._onData(bucket, results, outResource, received.data, currentBuffer, received.naming)
             .then(cb => {
