@@ -37,12 +37,16 @@ class StreamDataCopy extends StreamJob {
       return new Promise((resolve, reject) => {
         let currentBuffer = []
         let insertPromises = []
+        let lastNaming = null
 
         inStream.on('data', chunk => {
           inStream.pause()
 
           log.silly('Recebendo %s bytes de informação', chunk.length)
           const received = JSON.parse(chunk.toString('utf8'))
+          lastNaming = typeof received.naming === 'function'
+            ? received.naming()
+            : received.naming
 
           this._onData(bucket, results, outResource, received.data, currentBuffer, received.naming)
             .then(cb => {
@@ -62,7 +66,7 @@ class StreamDataCopy extends StreamJob {
         inStream.on('end', () => {
           log.info('Esperando %s operações de escrita finalizarem.', insertPromises.length)
           return Promise.all(insertPromises)
-            .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results))
+            .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results, lastNaming))
             .then(() => resolve())
             .catch(err => reject(err))
         })
@@ -116,12 +120,12 @@ class StreamDataCopy extends StreamJob {
     }
   }
 
-  async _end (resource, currentBuffer, resultsSource, lastResults, results) {
+  async _end (resource, currentBuffer, resultsSource, lastResults, results, lastNaming) {
     if (currentBuffer.length || (this.partialData && results.total)) {
       // caso não tenha gravado todos ainda
       await resource.insertData({
         data: currentBuffer,
-        outName: `${results.bucket.name}_${Date.now()}`,
+        outName: lastNaming || `${results.bucket.name}_${Date.now()}`,
         bucket: results.bucket,
         append: true,
         // Terminou a execução, faz flush

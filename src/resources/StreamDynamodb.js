@@ -121,6 +121,7 @@ class StreamDynamodb extends StreamResource {
     const inStream = new Readable({
       async read () {
         if (!currentData) currentData = descriptions.shift()
+        // não tem mais o que processar
         if (!currentData) return this.push(null)
 
         const { description, toProcess } = currentData
