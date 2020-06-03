@@ -13,7 +13,7 @@ class StreamHdfs extends StreamResource {
   }
 
   async insertData ({ data, outName, bucket, append }) {
-    const osPath = `/tmp/${bucket.name}/${outName}`
+    const osPath = `/tmp/${outName}`
 
     // file exists
     const exists = await FileSystem.exists(osPath)
@@ -23,11 +23,15 @@ class StreamHdfs extends StreamResource {
 
     // espera escrever o arquivo no SO
     const promise = append && exists
-      ? FileSystem.append(osPath, outData)
-      : FileSystem.write(osPath, outData)
+      ? FileSystem.append(outData, osPath)
+      : FileSystem.write(outData, osPath)
 
     await promise
     await OS.run(this.shellCommand(bucket.name, outName, osPath))
+      .catch(async err => {
+        await FileSystem.delete(osPath)
+        throw err
+      })
 
     // remove o arquivo temporário do so
     return FileSystem.delete(osPath)

@@ -25,7 +25,18 @@ class FileSystem {
   static exists (path) {
     return new Promise((resolve, reject) =>
       // resolvendo um boolean, se tem stats tem arquivo ou diretório
-      fs.stat(path, (err, stats) => err ? reject(err) : resolve(!!stats))
+      fs.stat(path, (err, stats) => {
+        if (err) {
+          // arquivo não existe
+          if (err.errno === -2) {
+            return resolve(false)
+          }
+
+          return reject(err)
+        }
+
+        resolve(!!stats)
+      })
     )
   }
 
