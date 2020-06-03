@@ -1,4 +1,4 @@
-const fs = require('fs')
+const FileSystem = require('../../utils/FileSystem')
 const JobResultsSource = require('./JobResultsSource')
 
 /**
@@ -20,20 +20,19 @@ class FileResultsSource extends JobResultsSource {
    * Lê um arquivo json
    */
 
-  load () {
-    return new Promise((resolve, reject) =>
-      fs.readFile(this.sourcePath, (err, data) => {
-        if (err) {
-          if (err.errno === -2) {
-            return resolve(null)
-          }
+  async load () {
+    let file = null
+    try {
+      file = JSON.parse(
+        await FileSystem.read(this.sourcePath)
+      )
+    } catch (err) {
+      if (err.errno !== -2) {
+        throw err
+      }
+    }
 
-          return reject(err)
-        }
-
-        return resolve(JSON.parse(data.toString()))
-      })
-    )
+    return file
   }
 
   /**
@@ -42,9 +41,7 @@ class FileResultsSource extends JobResultsSource {
    */
 
   write (results) {
-    return new Promise(resolve =>
-      fs.writeFile(this.sourcePath, JSON.stringify(results), resolve)
-    )
+    return FileSystem.write(this.sourcePath, JSON.stringify(results))
   }
 }
 

@@ -1,36 +1,36 @@
-const WebHDFS = require('webhdfs')
+const OS = require('../utils/Os')
+const FileSystem = require('../utils/FileSystem')
 const StreamResource = require('./StreamResource')
 const log = require('../logger')(__filename)
 
-const { Readable } = require('stream')
-
 class StreamHdfs extends StreamResource {
-  constructor (config, parser) {
-    super(config, parser)
+  shellCommand (table, outName, osFilePath) {
+    // full path
+    const hdfsPath = `${this.config.hdfs.writePath}/${table}/${outName}`
+    log.debug('Salvando arquivo no path %s', hdfsPath)
 
-    log.debug('Configurações do HDFS: %O', this.config.hdfs)
-    this.client = WebHDFS.createClient(this.config.hdfs)
+    return `hdfs dfs -put -f ${osFilePath} ${hdfsPath}`
   }
 
   async insertData ({ data, outName, bucket, append }) {
-    // full path
-    const path = `${this.config.hdfs.writePath}/${bucket.name}/${outName}`
+    const osPath = `/tmp/${bucket.name}/${outName}`
 
     // file exists
-    const exists = new Promise((resolve, reject) => this.client.exists(path, resolve))
-
-    log.debug('Salvando arquivo no path %s', path)
+    const exists = await FileSystem.exists(osPath)
     log.silly('Objeto sendo gravado %O', data)
 
-    const remoteFileStream = this.client.createWriteStream(path, append && exists)
-    const readable = Readable.from(data.map(item => JSON.stringify(item)).join('\n'))
+    const outData = data.map(item => JSON.stringify(item)).join('\n')
 
-    readable.pipe(remoteFileStream)
+    // espera escrever o arquivo no SO
+    const promise = append && exists
+      ? FileSystem.append(osPath, outData)
+      : FileSystem.write(osPath, outData)
 
-    return new Promise((resolve, reject) => {
-      remoteFileStream.on('error', reject)
-      remoteFileStream.on('finish', resolve)
-    })
+    await promise
+    await OS.run(this.shellCommand(bucket.name, outName, osPath))
+
+    // remove o arquivo temporário do so
+    return FileSystem.delete(osPath)
   }
 }
 
