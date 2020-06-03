@@ -41,7 +41,7 @@ class FileResultsSource extends JobResultsSource {
    */
 
   write (results) {
-    return FileSystem.write(this.sourcePath, JSON.stringify(results))
+    return FileSystem.write(JSON.stringify(results), this.sourcePath)
   }
 }
 
