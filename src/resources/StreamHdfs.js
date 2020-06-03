@@ -25,11 +25,11 @@ class StreamHdfs extends StreamResource {
 
     const outData = data.map(item => JSON.stringify(item)).join('\n')
 
-    // espera escrever o arquivo no SO
     const promise = append && exists
       ? FileSystem.append(outData, osPath)
       : FileSystem.write(outData, osPath)
 
+    // espera escrever o arquivo no SO
     await promise
 
     // Salva no hdfs quando não estiver fazendo mais append

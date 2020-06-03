@@ -117,15 +117,17 @@ class StreamDataCopy extends StreamJob {
   }
 
   async _end (resource, currentBuffer, resultsSource, lastResults, results) {
-    // caso não tenha gravado todos ainda
-    await resource.insertData({
-      data: currentBuffer,
-      outName: `${results.bucket.name}_${Date.now()}`,
-      bucket: results.bucket,
-      append: true,
-      // Terminou a execução, faz flush
-      flush: true
-    })
+    if (currentBuffer.length) {
+      // caso não tenha gravado todos ainda
+      await resource.insertData({
+        data: currentBuffer,
+        outName: `${results.bucket.name}_${Date.now()}`,
+        bucket: results.bucket,
+        append: true,
+        // Terminou a execução, faz flush
+        flush: true
+      })
+    }
 
     const index = lastResults.findIndex(lr => lr.bucket.name === results.bucket.name)
     if (index === -1) {
