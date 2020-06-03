@@ -4,6 +4,10 @@ const StreamResource = require('./StreamResource')
 const log = require('../logger')(__filename)
 
 class StreamHdfs extends StreamResource {
+  createHdfsFilePath (table) {
+    return `hdfs dfs -mkdir -p ${this.config.hdfs.writePath}/${table}`
+  }
+
   shellCommand (table, outName, osFilePath) {
     // full path
     const hdfsPath = `${this.config.hdfs.writePath}/${table}/${outName}`
@@ -27,6 +31,8 @@ class StreamHdfs extends StreamResource {
       : FileSystem.write(outData, osPath)
 
     await promise
+    // certificando que o path no hdfs está criado
+    await OS.run(this.createHdfsFilePath(bucket.name))
     await OS.run(this.shellCommand(bucket.name, outName, osPath))
       .catch(async err => {
         await FileSystem.delete(osPath)
