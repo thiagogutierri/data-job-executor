@@ -13,7 +13,7 @@ class StreamHdfs extends StreamResource {
   }
 
   async insertData ({ data, outName, bucket, append }) {
-    const osPath = `/tmp/${outName}`
+    const osPath = `/tmp/${bucket.name}_${outName}`
 
     // file exists
     const exists = await FileSystem.exists(osPath)
