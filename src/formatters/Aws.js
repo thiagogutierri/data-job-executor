@@ -52,7 +52,7 @@ class Aws extends Formatter {
 
   static L (data, path, obj) {
     log.silly('Parseando list: %s, %O, %O', path, data, obj)
-    obj.L.forEach((m, index) => this.M(data, `${path}[${index}]`, m))
+    obj.L.forEach((m, index) => this.ARRAY(data, `${path}[${index}]`, m))
   }
 
   static NULL (data, path, obj) {
@@ -71,6 +71,22 @@ class Aws extends Formatter {
     Object.keys(obj.M).forEach(key => {
       log.silly('forEach key(%s)/value(%s)', key, obj.M[key])
       return Object.keys(obj.M[key]).forEach(f => {
+        if (!(typeof this[f] === 'function')) {
+          throw new Error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
+        }
+        const rPath = path ? `${path}_${key}` : key
+        this[f](data, rPath, obj.M[key])
+      })
+    }
+    )
+  }
+
+  static ARRAY (data, path, obj) {
+    log.silly('JSON Plan: %s', JSON.stringify(obj))
+    log.silly('Parseando map: %s, %O, %O', path, data, obj)
+    Object.keys(obj).forEach(key => {
+      log.silly('forEach key(%s)/value(%s)', key, obj.M[key])
+      return Object.keys(obj[key]).forEach(f => {
         if (!(typeof this[f] === 'function')) {
           throw new Error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
         }
