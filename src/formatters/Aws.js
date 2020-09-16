@@ -86,15 +86,12 @@ class Aws extends Formatter {
     log.silly('Parseando map: %s, %O, %O', path, data, obj)
     Object.keys(obj).forEach(key => {
       log.silly('forEach key(%s)/value(%s)', key, obj[key])
-      return Object.keys(obj[key]).forEach(f => {
-        if (!(typeof this[f] === 'function')) {
-          throw new Error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
-        }
-        const rPath = path ? `${path}_${key}` : key
-        this[f](data, rPath, obj[key])
-      })
-    }
-    )
+      if (!(typeof this[key] === 'function')) {
+        throw new Error(`Parâmetro ${JSON.stringify(key)} desconhecido`)
+      }
+      const rPath = path ? `${path}_${key}` : key
+      this[key](data, rPath, obj[key])
+    })
   }
 }
 
