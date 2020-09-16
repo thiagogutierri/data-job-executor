@@ -66,7 +66,7 @@ class Aws extends Formatter {
   }
 
   static M (data, path, obj) {
-    // log.silly('Parseando map: %s, %O, %O', path, data, obj)
+    log.silly('Parseando map: %s, %O, %O', path, data, obj)
 
     Object.keys(obj.M).forEach(key =>
       Object.keys(obj.M[key]).forEach(f => {
