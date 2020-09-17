@@ -96,7 +96,7 @@ class Aws extends Formatter {
         throw new Error(`Parâmetro ${JSON.stringify(key)} desconhecido`)
       }
       const rPath = path ? `${path}` : key
-      this[key](data, rPath, obj[key])
+      this[key](data, rPath, obj)
     })
   }
 }
