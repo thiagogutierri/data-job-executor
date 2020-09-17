@@ -12,7 +12,7 @@ class Aws extends Formatter {
 
     const retorno = {}
     this.M(retorno, '', { M: data })
-
+    log.silly('RESULTADO DO FORMAT: ', retorno)
     return retorno
   }
 
@@ -89,7 +89,7 @@ class Aws extends Formatter {
       if (!(typeof this[key] === 'function')) {
         throw new Error(`Parâmetro ${JSON.stringify(key)} desconhecido`)
       }
-      const rPath = path ? `${path}_${key}` : key
+      const rPath = path ? `${path}` : key
       this[key](data, rPath, obj[key])
     })
   }
