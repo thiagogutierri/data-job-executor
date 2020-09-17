@@ -12,7 +12,7 @@ class Aws extends Formatter {
 
     const retorno = {}
     this.M(retorno, '', { M: data })
-    log.silly('RESULTADO DO FORMAT: ', retorno)
+    log.silly('RESULTADO DO FORMAT: %O', retorno)
     return retorno
   }
 
@@ -68,10 +68,16 @@ class Aws extends Formatter {
   static M (data, path, obj) {
     log.silly('JSON Plan: %s', JSON.stringify(obj))
     log.silly('Parseando map: %s, %O, %O', path, data, obj)
+    if (!obj.M) {
+      log.silly('Cheguei no M sem M: %s, %O, %O', path, data, obj)
+      const clone = JSON.parse(JSON.stringify(obj))
+      obj.M = clone
+    }
     Object.keys(obj.M).forEach(key => {
       log.silly('forEach key(%s)/value(%s)', key, obj.M[key])
       return Object.keys(obj.M[key]).forEach(f => {
         if (!(typeof this[f] === 'function')) {
+          log.error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
           throw new Error(`Parâmetro ${JSON.stringify(f)} desconhecido`)
         }
         const rPath = path ? `${path}_${key}` : key
@@ -83,7 +89,7 @@ class Aws extends Formatter {
 
   static ARRAY (data, path, obj) {
     log.silly('JSON Plan: %s', JSON.stringify(obj))
-    log.silly('Parseando map: %s, %O, %O', path, data, obj)
+    log.silly('Parseando ARRAY: %s, %O, %O', path, data, obj)
     Object.keys(obj).forEach(key => {
       log.silly('forEach key(%s)/value(%s)', key, obj[key])
       if (!(typeof this[key] === 'function')) {
