@@ -60,7 +60,10 @@ class StreamDataCopy extends StreamJob {
 
               inStream.resume()
             })
-            .catch(err => reject(err))
+            .catch(err => {
+              log.error('Error na execução do _onData', err)
+              reject(err)
+            })
         })
 
         inStream.on('end', () => {
@@ -68,7 +71,10 @@ class StreamDataCopy extends StreamJob {
           return Promise.all(insertPromises)
             .then(() => this._end(outResource, currentBuffer, resultsSource, lastResults, results, lastNaming))
             .then(() => resolve())
-            .catch(err => reject(err))
+            .catch(err => {
+              log.error('Error em alguma operação', err)
+              reject(err)
+            })
         })
 
         inStream.on('error', err => reject(err))
